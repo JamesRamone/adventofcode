@@ -1,0 +1,51 @@
+<!-- vim: syntax=markdown -->
+
+# Day 1
+
+## Load input
+
+```elixir
+input_file = "/data/day_1/input"
+
+input =
+  input_file
+  |> File.read!()
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.to_integer/1)
+```
+
+## Sonar module
+
+```elixir
+defmodule Sonar do
+  def count_depth_increase([_head]), do: 0
+
+  def count_depth_increase([a | tail = [b | _]]) when a < b do
+    1 + count_depth_increase(tail)
+  end
+
+  def count_depth_increase([_head | tail]) do
+    count_depth_increase(tail)
+  end
+end
+```
+
+<!-- livebook:{"branch_parent_index":1} -->
+
+## Part 1
+
+```elixir
+input
+|> Sonar.count_depth_increase()
+```
+
+<!-- livebook:{"branch_parent_index":1} -->
+
+## Part 2
+
+```elixir
+input
+|> Enum.chunk_every(3, 1, :discard)
+|> Enum.map(&Enum.sum/1)
+|> Sonar.count_depth_increase()
+```
