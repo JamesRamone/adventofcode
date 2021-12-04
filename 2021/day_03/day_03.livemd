@@ -1,0 +1,132 @@
+<!-- vim: syntax=markdown -->
+
+# Day 3
+
+## Load input
+
+```elixir
+# input = """
+# 00100
+# 11110
+# 10110
+# 10111
+# 10101
+# 01111
+# 00111
+# 11100
+# 10000
+# 11001
+# 00010
+# 01010
+# """
+
+input = File.read!("/data/day_3/input")
+
+freq =
+  input
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.codepoints/1)
+  |> Enum.map(&Enum.map(&1, fn x -> String.to_integer(x) end))
+  |> Enum.zip_with(&Enum.frequencies/1)
+  |> Enum.map(&Map.values/1)
+```
+
+```elixir
+gamma =
+  freq
+  |> Enum.map(fn [a, b] -> if a < b, do: 1, else: 0 end)
+  |> Integer.undigits(2)
+```
+
+```elixir
+epsilon =
+  freq
+  |> Enum.map(fn [a, b] -> if a > b, do: 1, else: 0 end)
+  |> Integer.undigits(2)
+```
+
+```elixir
+gamma * epsilon
+```
+
+## Part 2
+
+```elixir
+input = """
+00100
+11110
+10110
+10111
+10101
+01111
+00111
+11100
+10000
+11001
+00010
+01010
+"""
+
+# input = File.read!("/data/day_3/input")
+
+data =
+  input
+  |> String.split("\n", trim: true)
+  |> IO.inspect()
+  |> Enum.map(&String.codepoints/1)
+  |> IO.inspect()
+  |> Enum.map(&Enum.map(&1, fn x -> String.to_integer(x) end))
+  |> IO.inspect()
+  |> Enum.map(&List.to_tuple/1)
+```
+
+```elixir
+defmodule Day3.Part2 do
+  def o2(list, pos \\ 0)
+
+  def o2([item], _pos), do: item |> to_integer
+
+  def o2(list, pos) do
+    freq = get_frequencies(list, pos)
+
+    list
+    |> Enum.filter(fn x -> elem(x, pos) == most_frequent(freq) end)
+    |> o2(pos + 1)
+  end
+
+  def co2(list, pos \\ 0)
+
+  def co2([item], _pos), do: item |> to_integer
+
+  def co2(list, pos) do
+    freq = get_frequencies(list, pos)
+
+    list
+    |> Enum.filter(fn x -> elem(x, pos) != most_frequent(freq) end)
+    |> co2(pos + 1)
+  end
+
+  defp most_frequent(%{0 => x, 1 => y}) when x > y, do: 0
+  defp most_frequent(%{0 => _, 1 => _}), do: 1
+
+  defp get_frequencies(list, pos) do
+    list
+    |> Enum.map(&elem(&1, pos))
+    |> Enum.frequencies()
+  end
+
+  defp to_integer(item), do: item |> Tuple.to_list() |> Integer.undigits(2)
+end
+```
+
+```elixir
+o2_rating = Day3.Part2.o2(data)
+```
+
+```elixir
+co2_rating = Day3.Part2.co2(data)
+```
+
+```elixir
+o2_rating * co2_rating
+```
