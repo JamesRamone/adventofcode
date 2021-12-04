@@ -1,0 +1,101 @@
+<!-- vim: syntax=markdown -->
+
+# Day 2
+
+## Load input
+
+```elixir
+input_file = "/data/day_2/input"
+
+input =
+  input_file
+  |> File.read!()
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split(&1, " ", trim: true))
+  |> Enum.map(fn [cmd, v] -> [cmd, String.to_integer(v)] end)
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Part 1
+
+```elixir
+defmodule Submarine do
+  defstruct x: 0, depth: 0
+
+  def execute_plan(commands) do
+    submarine = %__MODULE__{}
+
+    move(submarine, commands)
+  end
+
+  def multiply_position(sub), do: sub.x * sub.depth
+
+  defp move(sub, []), do: sub
+
+  defp move(sub, [[cmd, value] | t]) do
+    sub
+    |> update_position(cmd, value)
+    |> move(t)
+  end
+
+  defp update_position(sub, "forward", value), do: %{sub | x: sub.x + value}
+  defp update_position(sub, "down", value), do: %{sub | depth: sub.depth + value}
+  defp update_position(sub, "up", value), do: %{sub | depth: sub.depth - value}
+  defp update_position(sub, _cmd, _value), do: sub
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input
+|> Submarine.execute_plan()
+|> Submarine.multiply_position()
+```
+
+<!-- livebook:{"branch_parent_index":0} -->
+
+## Part 2
+
+```elixir
+defmodule Submarine2 do
+  defstruct x: 0, depth: 0, aim: 0
+
+  def execute_plan(commands) do
+    submarine = %__MODULE__{}
+
+    move(submarine, commands)
+  end
+
+  def multiply_position(sub), do: sub.x * sub.depth
+
+  defp move(sub, []), do: sub
+
+  defp move(sub, [[cmd, value] | t]) do
+    sub
+    |> update_position(cmd, value)
+    |> move(t)
+  end
+
+  defp update_position(sub, "forward", value) do
+    %{
+      sub
+      | x: sub.x + value,
+        depth: sub.depth + sub.aim * value
+    }
+  end
+
+  defp update_position(sub, "down", value), do: %{sub | aim: sub.aim + value}
+  defp update_position(sub, "up", value), do: %{sub | aim: sub.aim - value}
+  defp update_position(sub, _cmd, _value), do: sub
+end
+```
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input
+|> Submarine2.execute_plan()
+|> Submarine2.multiply_position()
+```
