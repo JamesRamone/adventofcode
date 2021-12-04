@@ -1,0 +1,175 @@
+<!-- vim: syntax=markdown -->
+
+# Day 4
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, github: "livebook-dev/kino"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Please add your input:")
+```
+
+## Parse input
+
+```elixir
+[numbers, boards] =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", parts: 2, trim: true)
+```
+
+```elixir
+numbers =
+  numbers
+  |> String.split(",", trim: true)
+  |> Enum.map(&String.to_integer/1)
+```
+
+```elixir
+boards =
+  boards
+  |> String.split("\n\n", trim: true)
+  |> Enum.map(fn board ->
+    board
+    |> String.split("\n", trim: true)
+    |> Enum.map(fn row ->
+      row
+      |> String.split(" ", trim: true)
+      |> Enum.map(&String.to_integer/1)
+    end)
+  end)
+```
+
+## Part 1
+
+```elixir
+defmodule Bingo do
+  def play(boards, []), do: boards
+
+  def play(boards, [h | t]) do
+    new_boards =
+      boards
+      |> mark_number(h)
+      |> IO.inspect(label: "Number #{h}")
+
+    case get_winner(new_boards) do
+      [winner] -> result(winner, h)
+      _ -> play(new_boards, t)
+    end
+  end
+
+  def mark_number(boards, num) do
+    boards
+    |> Enum.map(
+      &Enum.map(&1, fn row ->
+        Enum.map(row, fn x ->
+          if x == num, do: nil, else: x
+        end)
+      end)
+    )
+  end
+
+  def get_winner(boards) do
+    Enum.filter(boards, &is_winner?/1)
+  end
+
+  defp is_winner?(board) do
+    check_win(board) or check_win(transpose(board))
+  end
+
+  defp check_win(board) do
+    Enum.any?(board, &Enum.all?(&1, fn x -> is_nil(x) end))
+  end
+
+  def transpose(board) do
+    board
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+  end
+
+  def result(winner, num), do: sum_board(winner) * num
+
+  def sum_board(board) do
+    board
+    |> List.flatten()
+    |> Enum.filter(& &1)
+    |> Enum.sum()
+  end
+end
+
+Bingo.play(boards, numbers)
+```
+
+## Part 2
+
+```elixir
+defmodule Part2.Bingo do
+  def play(boards, numbers), do: play(boards, numbers, [])
+
+  def play(boards, [], [{winner, num} | _]), do: result(winner, num)
+
+  def play(boards, [n | rest], winners) do
+    {winner, new_boards} =
+      boards
+      |> mark_number(n)
+      |> Enum.split_with(&is_winner?/1)
+      |> IO.inspect(label: "Number #{n}")
+
+    new_winners =
+      winners
+      |> add_winner(winner, n)
+      |> IO.inspect(label: "Winners!")
+
+    play(new_boards, rest, new_winners)
+  end
+
+  def mark_number(boards, num) do
+    boards
+    |> Enum.map(
+      &Enum.map(&1, fn row ->
+        Enum.map(row, fn x ->
+          if x == num, do: nil, else: x
+        end)
+      end)
+    )
+  end
+
+  defp add_winner(winners, [], num), do: winners
+  defp add_winner(winners, [winner], num), do: [{winner, num} | winners]
+  defp add_winner(winners, [h | t], num), do: [{h, num} | add_winner(winners, t, num)]
+
+  def get_winner(boards) do
+    Enum.filter(boards, &is_winner?/1)
+  end
+
+  defp is_winner?(board) do
+    check_win(board) or check_win(transpose(board))
+  end
+
+  defp check_win(board) do
+    Enum.any?(board, &Enum.all?(&1, fn x -> is_nil(x) end))
+  end
+
+  def transpose(board) do
+    board
+    |> Enum.zip()
+    |> Enum.map(&Tuple.to_list/1)
+  end
+
+  def result(winner, num), do: sum_board(winner) * num
+
+  def sum_board(board) do
+    board
+    |> List.flatten()
+    |> Enum.filter(& &1)
+    |> Enum.sum()
+  end
+end
+
+Part2.Bingo.play(boards, numbers)
+```
