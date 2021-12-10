@@ -1,0 +1,111 @@
+# Day 7
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"},
+  {:nx, github: "elixir-nx/nx", sparse: "nx"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Your input data:")
+```
+
+```elixir
+crabs =
+  input
+  |> Kino.Input.read()
+  |> String.split([",", "\n"], trim: true)
+  |> Enum.map(&String.to_integer/1)
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Part1 do
+  def calculate(crabs) do
+    min = crabs |> Enum.min()
+    max = crabs |> Enum.max()
+
+    for x <- min..max,
+        reduce: %{} do
+      acc ->
+        fuel = Enum.reduce(crabs, 0, fn crab, acc -> acc + abs(crab - x) end)
+        Map.put(acc, fuel, x)
+    end
+    |> Enum.min()
+    |> elem(0)
+  end
+end
+
+Part1.calculate(crabs)
+```
+
+## Part 2
+
+```elixir
+defmodule Part2 do
+  def calculate(crabs) do
+    min = crabs |> Enum.min()
+    max = crabs |> Enum.max()
+
+    for x <- min..max,
+        reduce: %{} do
+      acc ->
+        fuel =
+          Enum.reduce(crabs, 0, fn
+            crab, acc ->
+              steps = abs(crab - x)
+              acc + steps / 2 * (1 + steps)
+          end)
+
+        Map.put(acc, fuel, x)
+    end
+    |> Enum.min()
+    |> elem(0)
+  end
+end
+
+Part2.calculate(crabs)
+```
+
+## Part 1 - Median
+
+```elixir
+defmodule Part1Median do
+  def calculate(crabs) do
+    pos =
+      crabs
+      |> Enum.sort()
+      |> Enum.at(div(length(crabs), 2))
+
+    Enum.reduce(crabs, 0, fn crab, acc -> acc + abs(crab - pos) end)
+  end
+end
+
+Part1Median.calculate(crabs)
+```
+
+## Part 2 - Average
+
+```elixir
+defmodule Part2Average do
+  def calculate(crabs) do
+    pos =
+      crabs
+      |> Enum.sum()
+      |> div(length(crabs))
+
+    Enum.reduce(crabs, 0, fn crab, acc ->
+      steps = abs(crab - pos)
+      acc + steps / 2 * (1 + steps)
+    end)
+  end
+end
+
+Part2Average.calculate(crabs)
+```
