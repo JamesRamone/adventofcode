@@ -1,0 +1,100 @@
+# Day 10
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Input")
+```
+
+```elixir
+input =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split(&1, "", trim: true))
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Part1 do
+  @opening ["{", "[", "(", "<"]
+  @closing ["}", "]", ")", ">"]
+  def calculate(list) do
+    recur(list, [])
+  end
+
+  def recur([h | t], open) when h in @opening, do: recur(t, [h | open])
+
+  def recur([h | t], [open | rest]) when h in @closing do
+    if open == Enum.at(@opening, Enum.find_index(@closing, &(&1 == h))) do
+      recur(t, rest)
+    else
+      h
+    end
+  end
+
+  def recur([], open), do: open
+
+  def score(")"), do: 3
+  def score("]"), do: 57
+  def score("}"), do: 1197
+  def score(">"), do: 25137
+end
+
+input
+|> Enum.map(&Part1.calculate(&1))
+|> Enum.reject(&is_list/1)
+|> Enum.map(&Part1.score/1)
+|> Enum.sum()
+```
+
+## Part 2
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Part2 do
+  @opening ["{", "[", "(", "<"]
+  @closing ["}", "]", ")", ">"]
+  def complete(list), do: complete(list, [])
+
+  def complete([h | t], result) do
+    close = Enum.at(@closing, Enum.find_index(@opening, &(&1 == h)))
+    complete(t, [close | result])
+  end
+
+  def complete([], result), do: Enum.reverse(result)
+
+  def score(")"), do: 1
+  def score("]"), do: 2
+  def score("}"), do: 3
+  def score(">"), do: 4
+end
+
+scores =
+  input
+  |> Enum.map(&Part1.calculate(&1))
+  |> Enum.reject(&is_binary/1)
+  |> Enum.map(fn line ->
+    line
+    |> Part2.complete()
+    |> Enum.reduce(0, fn x, acc ->
+      acc * 5 + Part2.score(x)
+    end)
+  end)
+
+middle = div(length(scores), 2)
+
+scores
+|> Enum.sort()
+|> Enum.at(middle)
+```
