@@ -1,0 +1,125 @@
+# Day 9
+
+## Section
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"},
+  {:vega_lite, "~> 0.1.2"}
+])
+
+alias VegaLite, as: Vl
+```
+
+```elixir
+input = Kino.Input.textarea("Your input:")
+```
+
+```elixir
+raw_input =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+
+input =
+  raw_input
+  |> Enum.map(fn row ->
+    row
+    |> String.split("", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> List.to_tuple()
+  end)
+  |> List.to_tuple()
+
+map =
+  for i <- 0..(tuple_size(input) - 1),
+      j <- 0..(tuple_size(elem(input, 0)) - 1),
+      reduce: %{} do
+    acc -> Map.put(acc, {i, j}, input |> elem(i) |> elem(j))
+  end
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Part1 do
+  def calculate(input, map) do
+    for i <- 0..(tuple_size(input) - 1),
+        j <- 0..(tuple_size(elem(input, 0)) - 1),
+        reduce: [] do
+      acc ->
+        curr = Map.get(map, {i, j})
+
+        if curr < Map.get(map, {i, j - 1}, :infinity) and
+             curr < Map.get(map, {i, j + 1}, :infinity) and
+             curr < Map.get(map, {i - 1, j}, :infinity) and
+             curr < Map.get(map, {i + 1, j}, :infinity) do
+          [{i, j} | acc]
+        else
+          acc
+        end
+    end
+  end
+end
+
+mins = Part1.calculate(input, map)
+
+mins
+|> IO.inspect()
+|> Enum.map(&Map.get(map, &1))
+|> Enum.map(&(&1 + 1))
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+defmodule Part2 do
+  def calculate_basin_sizes(mins, map) do
+    map = Map.reject(map, fn {_k, v} -> v == 9 end)
+
+    Enum.map(mins, fn min ->
+      min
+      |> basin_points(map, MapSet.new())
+      |> MapSet.size()
+    end)
+  end
+
+  def basin_points(key = {i, j}, map, basin) do
+    val = Map.get(map, key)
+
+    for [x, y] <- [[0, -1], [0, 1], [-1, 0], [1, 0]], reduce: %MapSet{} do
+      acc ->
+        p = Map.get(map, {i + x, j + y}, nil)
+
+        if not is_nil(p) and val < p do
+          basin_points({i + x, j + y}, map, acc)
+        else
+          acc
+        end
+    end
+    |> MapSet.put(key)
+    |> MapSet.union(basin)
+  end
+end
+
+Part2.calculate_basin_sizes(mins, map)
+|> Enum.sort(:desc)
+|> Enum.take(3)
+|> Enum.product()
+```
+
+## Part 2 - VegaLite
+
+Source: https://github.com/miladamilli/Advent_of_Code_2021/blob/master/day09.livemd#L103
+
+```elixir
+Vl.new(width: 700, height: 700)
+|> Vl.data_from_values(Enum.map(map, fn {{x, y}, h} -> %{"x" => x, "y" => y, "h" => h} end))
+|> Vl.mark(:circle, size: 60, opacity: 0.8)
+|> Vl.encode_field(:x, "x", type: :quantitative, axis: false)
+|> Vl.encode_field(:y, "y", type: :quantitative, axis: false)
+|> Vl.encode_field(:color, "h", type: :quantitative, scale: [range: ["red", "yellow", "gray"]])
+```
