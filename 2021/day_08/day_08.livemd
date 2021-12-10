@@ -1,0 +1,107 @@
+# Day 8
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Your input data:")
+```
+
+```elixir
+input =
+  input
+  |> Kino.Input.read()
+  |> String.split([",", "\n"], trim: true)
+  |> Enum.map(&String.split(&1, " | "))
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+lengths = [2, 3, 4, 7]
+
+input
+|> Enum.map(fn
+  [_, out] ->
+    out
+    |> String.split()
+    |> Enum.map(&String.length/1)
+    |> Enum.filter(&(&1 in lengths))
+end)
+|> List.flatten()
+|> Enum.count()
+```
+
+## Part 2
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+input
+|> Enum.map(fn
+  [digits, numbers] ->
+    digits = digits |> String.split() |> Enum.map(&String.split(&1, "", trim: true))
+
+    one = Enum.find(digits, nil, &(Enum.count(&1) == 2))
+
+    seven = Enum.find(digits, nil, &(Enum.count(&1) == 3))
+
+    four = Enum.find(digits, nil, &(Enum.count(&1) == 4))
+
+    eight = Enum.find(digits, nil, &(Enum.count(&1) == 7))
+
+    two_three_five = Enum.filter(digits, &(Enum.count(&1) == 5))
+    zero_six_nine = Enum.filter(digits, &(Enum.count(&1) == 6))
+
+    {[nine], zero_six} =
+      Enum.split_with(zero_six_nine, fn
+        x -> Enum.all?(four, &Enum.member?(x, &1))
+      end)
+
+    {[three], two_five} =
+      Enum.split_with(two_three_five, fn
+        x ->
+          Enum.all?(one, &Enum.member?(x, &1)) and
+            Enum.all?(seven, &Enum.member?(x, &1))
+      end)
+
+    {[zero], [six]} =
+      Enum.split_with(zero_six, fn
+        x -> Enum.all?(x, &Enum.member?(eight, &1)) and Enum.all?(one, &Enum.member?(x, &1))
+      end)
+
+    {[five], [two]} =
+      Enum.split_with(two_five, fn
+        x -> Enum.all?(x, &Enum.member?(six, &1)) and not Enum.all?(one, &Enum.member?(x, &1))
+      end)
+
+    map = %{
+      (zero |> Enum.sort() |> List.to_string()) => 0,
+      (one |> Enum.sort() |> List.to_string()) => 1,
+      (two |> Enum.sort() |> List.to_string()) => 2,
+      (three |> Enum.sort() |> List.to_string()) => 3,
+      (four |> Enum.sort() |> List.to_string()) => 4,
+      (five |> Enum.sort() |> List.to_string()) => 5,
+      (six |> Enum.sort() |> List.to_string()) => 6,
+      (seven |> Enum.sort() |> List.to_string()) => 7,
+      (eight |> Enum.sort() |> List.to_string()) => 8,
+      (nine |> Enum.sort() |> List.to_string()) => 9
+    }
+
+    numbers
+    |> String.split()
+    |> Enum.map(fn x ->
+      key = x |> String.split("", trim: true) |> Enum.sort() |> List.to_string()
+      Map.get(map, key)
+    end)
+    |> Integer.undigits()
+end)
+|> Enum.sum()
+```
