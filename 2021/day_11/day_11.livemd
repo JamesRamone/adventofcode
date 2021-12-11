@@ -1,0 +1,155 @@
+# Day 11
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"},
+  {:vega_lite, "~> 0.1.2"}
+])
+
+alias VegaLite, as: Vl
+```
+
+```elixir
+input = Kino.Input.textarea("Your input:")
+```
+
+```elixir
+lines =
+  input
+  |> Kino.Input.read()
+  |> String.split("\n", trim: true)
+
+grid =
+  for {line, row} <- Enum.with_index(lines, 0),
+      {value, col} <- Enum.with_index(String.to_charlist(line), 0),
+      into: %{} do
+    {{row, col}, value - ?0}
+  end
+```
+
+## Part 1
+
+```elixir
+defmodule Part1 do
+  def energize(grid), do: Map.map(grid, fn {_k, v} -> v + 1 end)
+
+  def will_flash(grid) do
+    grid
+    |> Map.filter(fn {_k, v} -> v > 9 end)
+    |> Map.to_list()
+    |> Enum.map(fn {k, _v} -> k end)
+    |> MapSet.new()
+  end
+
+  def step({grid, total_flashes}) do
+    grid =
+      grid
+      |> energize
+
+    to_flash = grid |> will_flash
+
+    # total_flashes = total_flashes + MapSet.size(flashing)
+
+    {grid, total_flashes} = flash_all(grid, to_flash, total_flashes)
+
+    grid =
+      Map.map(grid, fn {_k, v} ->
+        if v > 9, do: 0, else: v
+      end)
+
+    {grid, total_flashes}
+  end
+
+  defp flash_all(grid, to_flash, total_flashes) do
+    {grid, flashing} =
+      Enum.reduce(to_flash, {grid, %MapSet{}}, fn point, {grid, flashing} ->
+        flash(point, {grid, flashing})
+      end)
+
+    {grid, total_flashes + MapSet.size(flashing)}
+  end
+
+  defp flash(point, {grid, flashes}) do
+    if point in flashes do
+      {grid, flashes}
+    else
+      flashes = MapSet.put(flashes, point)
+
+      for n <- neighbours(grid, point), reduce: {grid, flashes} do
+        {grid, flashes} ->
+          grid = Map.update!(grid, n, &(&1 + 1))
+
+          if Map.get(grid, n) > 9 do
+            flash(n, {grid, flashes})
+          else
+            {grid, flashes}
+          end
+      end
+    end
+  end
+
+  defp neighbours(grid, {x, y}) do
+    for i <- -1..1, j <- -1..1, into: [] do
+      {i, j}
+    end
+    |> List.delete({0, 0})
+    |> Enum.map(fn {i, j} -> {x + i, y + j} end)
+    |> Enum.filter(&Map.has_key?(grid, &1))
+  end
+end
+
+{_grid, total} = Enum.reduce(1..100, {grid, 0}, fn _x, acc -> Part1.step(acc) end)
+
+total
+```
+
+## Part 2
+
+```elixir
+Enum.reduce_while(1..1_000, {grid, 0}, fn step, acc = {_grid, _total} ->
+  {grid, total} = Part1.step(acc)
+
+  if Enum.any?(grid, fn {_k, v} -> v != 0 end) do
+    {:cont, {grid, total}}
+  else
+    {:halt, step}
+  end
+end)
+```
+
+## Vega Lite
+
+```elixir
+graph =
+  Vl.new(width: 500, height: 500)
+  |> Vl.data_from_values(
+    Enum.map(grid, fn {{x, y}, h} ->
+      %{"x" => x, "y" => y, "h" => h}
+    end)
+  )
+  |> Vl.encode_field(:x, "x", type: :quantitative, axis: false)
+  |> Vl.encode_field(:y, "y", type: :quantitative, axis: false)
+  |> Vl.mark(:circle, size: 100, opacity: 0.8)
+  |> Vl.encode_field(:color, "h", type: :quantitative, scale: [range: ["white", "orange", "red"]])
+  |> Kino.VegaLite.new()
+  |> Kino.render()
+
+Kino.VegaLite.periodically(
+  graph,
+  10,
+  {0, grid},
+  fn {step, grid} ->
+    Kino.VegaLite.clear(graph)
+    Kino.VegaLite.push(graph, grid)
+
+    if step < 10 do
+      {grid, _total} = Part1.step({grid, 0})
+      {:cont, {step + 1, grid}}
+    else
+      :halt
+    end
+  end
+)
+```
