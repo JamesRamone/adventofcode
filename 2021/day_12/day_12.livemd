@@ -1,0 +1,111 @@
+# Day 12
+
+## Setup
+
+```elixir
+Mix.install([
+  {:kino, "~> 0.4.1"}
+])
+```
+
+```elixir
+input = Kino.Input.textarea("Your input:")
+```
+
+```elixir
+edges =
+  input
+  |> Kino.Input.read()
+  |> String.split(["\n", "-"], trim: true)
+  |> Enum.chunk_every(2)
+
+graph =
+  for [a, b] <- edges,
+      reduce: %{} do
+    acc ->
+      acc
+      |> Map.update(a, [b], &[b | &1])
+      |> Map.update(b, [a], &[a | &1])
+  end
+```
+
+## Part 1
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Graph do
+  def paths(graph) do
+    path(graph, "start", [], [])
+    |> List.flatten()
+    |> Enum.chunk_while(
+      [],
+      fn
+        "end", acc -> {:cont, Enum.reverse(["end" | acc]), []}
+        el, acc -> {:cont, [el | acc]}
+      end,
+      fn
+        [] -> {:cont, []}
+        acc -> {:cont, Enum.reverse(acc), []}
+      end
+    )
+  end
+
+  defp path(_graph, "end", path, _visited), do: Enum.reverse(["end" | path])
+
+  defp path(graph, node, path, visited) do
+    visited = if String.downcase(node) == node, do: [node | visited], else: visited
+
+    for next <- Map.get(graph, node, []), next not in visited, reduce: [] do
+      acc -> [path(graph, next, [node | path], visited) | acc]
+    end
+  end
+end
+
+Graph.paths(graph)
+|> Enum.count()
+```
+
+## Part 2
+
+<!-- livebook:{"reevaluate_automatically":true} -->
+
+```elixir
+defmodule Graph2 do
+  def paths(graph) do
+    path(graph, "start", [], %{})
+    |> List.flatten()
+    |> Enum.chunk_while(
+      [],
+      fn
+        "end", acc -> {:cont, Enum.reverse(["end" | acc]), []}
+        el, acc -> {:cont, [el | acc]}
+      end,
+      fn
+        [] -> {:cont, []}
+        acc -> {:cont, Enum.reverse(acc), []}
+      end
+    )
+  end
+
+  defp path(_graph, "end", path, _visited), do: Enum.reverse(["end" | path])
+
+  defp path(graph, node, path, visited) do
+    visited =
+      if String.downcase(node) == node, do: Map.update(visited, node, 1, &(&1 + 1)), else: visited
+
+    for next <- Map.get(graph, node, []), can_visit?(visited, next), reduce: [] do
+      acc -> [path(graph, next, [node | path], visited) | acc]
+    end
+  end
+
+  defp can_visit?(visited, next) do
+    not Map.has_key?(visited, next) or
+      (not Enum.any?(visited, fn {_k, v} -> v == 2 end) and
+         next != "start")
+  end
+end
+
+Graph2.paths(graph)
+|> Enum.count()
+```
