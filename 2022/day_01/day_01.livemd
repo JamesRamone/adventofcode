@@ -1,0 +1,54 @@
+# Day 1: Calorie Counting
+
+## Setup
+
+https://adventofcode.com/2022/day/1
+
+```elixir
+# input = """
+# 1000
+# 2000
+# 3000
+
+# 4000
+
+# 5000
+# 6000
+
+# 7000
+# 8000
+# 9000
+
+# 10000
+# """
+
+input = File.read!("/data/2022/day_01/input")
+```
+
+```elixir
+data =
+  input
+  |> String.split("\n\n", trim: true)
+  |> Enum.map(fn x ->
+    x
+    |> String.split("\n", trim: true)
+    |> Enum.map(&String.to_integer/1)
+    |> Enum.sum()
+  end)
+```
+
+## Part 1
+
+```elixir
+data
+|> Enum.max()
+```
+
+## Part 2
+
+```elixir
+data
+|> Enum.sort(:desc)
+|> Enum.take(3)
+|> Enum.sum()
+```
