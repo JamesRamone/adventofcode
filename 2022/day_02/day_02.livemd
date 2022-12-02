@@ -1,0 +1,107 @@
+# Day 2: Rock Paper Scissors
+
+## Setup
+
+https://adventofcode.com/2022/day/2
+
+```elixir
+# input = """
+# A Y
+# B X
+# C Z
+# """
+
+input = File.read!("/data/2022/day_02/input")
+```
+
+```elixir
+data =
+  input
+  |> String.split("\n", trim: true)
+  |> Enum.map(&String.split(&1, " ", trim: true))
+```
+
+## Part 1
+
+```elixir
+defmodule Game do
+  def convert(round), do: Enum.map(round, &points/1)
+
+  defp points("A"), do: 1
+  defp points("X"), do: 1
+  defp points("B"), do: 2
+  defp points("Y"), do: 2
+  defp points("C"), do: 3
+  defp points("Z"), do: 3
+
+  def score([a, a]), do: a + 3
+  def score([1, 2]), do: 2 + 6
+  def score([1, 3]), do: 3 + 0
+  def score([2, 3]), do: 3 + 6
+  def score([2, 1]), do: 1 + 0
+  def score([3, 1]), do: 1 + 6
+  def score([3, 2]), do: 2 + 0
+end
+```
+
+```elixir
+data
+|> Enum.map(fn round ->
+  round
+  |> Game.convert()
+  |> Game.score()
+end)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+defmodule Game2 do
+  @moves %{
+    "A" => :rock,
+    "B" => :paper,
+    "C" => :scissors
+  }
+
+  @points %{
+    :rock => 1,
+    :paper => 2,
+    :scissors => 3
+  }
+
+  @wins %{
+    :rock => :scissors,
+    :paper => :rock,
+    :scissors => :paper
+  }
+
+  @loses %{
+    :rock => :paper,
+    :paper => :scissors,
+    :scissors => :rock
+  }
+
+  def convert([l, "X"]), do: [@moves[l], @wins[@moves[l]]]
+  def convert([l, "Y"]), do: [@moves[l], @moves[l]]
+  def convert([l, "Z"]), do: [@moves[l], @loses[@moves[l]]]
+
+  def to_points(round), do: Enum.map(round, fn x -> @points[x] end)
+
+  def score([a, a]), do: a + 3
+  def score([1, 2]), do: 2 + 6
+  def score([1, 3]), do: 3 + 0
+  def score([2, 3]), do: 3 + 6
+  def score([2, 1]), do: 1 + 0
+  def score([3, 1]), do: 1 + 6
+  def score([3, 2]), do: 2 + 0
+end
+```
+
+```elixir
+data
+|> Enum.map(&Game2.convert/1)
+|> Enum.map(&Game2.to_points/1)
+|> Enum.map(&Game2.score/1)
+|> Enum.sum()
+```
