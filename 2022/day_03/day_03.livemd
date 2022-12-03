@@ -1,0 +1,77 @@
+# Day 3: Rucksack Reorganization
+
+## Setup
+
+https://adventofcode.com/2022/day/3
+
+```elixir
+# input = """
+# vJrwpWtwJgWrhcsFMMfFFhFp
+# jqHRNqRjqzjGDLGLrsFMfFZSrLrFZsSL
+# PmmdzqPrVvPwwTWBwg
+# wMqvLMZHhHMvwLHjbvcjnnSBnvTQFn
+# ttgJtRGJQctTZtZT
+# CrZsJsPPZsGzwwsLwLmpwMDw
+# """
+
+input = File.read!("/data/2022/day_03/input")
+```
+
+```elixir
+data =
+  input
+  |> String.split("\n", trim: true)
+  |> Enum.map(&to_charlist/1)
+```
+
+```elixir
+defmodule Rucksack do
+  def find_duplicate(rucksack) do
+    half = div(length(rucksack), 2)
+
+    [l, r] =
+      rucksack
+      |> Enum.chunk_every(half)
+      |> Enum.map(&MapSet.new/1)
+
+    MapSet.intersection(l, r)
+    |> MapSet.to_list()
+  end
+
+  def find_badge(group) do
+    group
+    |> do_find_badge
+    |> MapSet.to_list()
+  end
+
+  defp do_find_badge([h]), do: h
+  defp do_find_badge([h | t]), do: MapSet.intersection(h, do_find_badge(t))
+
+  def priority([c]) when c >= ?a and c <= ?z, do: c - 96
+  def priority([c]) when c >= ?A and c <= ?Z, do: c - 38
+end
+```
+
+## Part 1
+
+```elixir
+data
+|> Enum.map(&Rucksack.find_duplicate/1)
+|> Enum.map(&Rucksack.priority/1)
+|> Enum.sum()
+```
+
+## Part 2
+
+```elixir
+result2 =
+  data
+  |> Enum.map(&MapSet.new/1)
+  |> Enum.chunk_every(3)
+  |> Enum.map(fn x ->
+    x
+    |> Rucksack.find_badge()
+    |> Rucksack.priority()
+  end)
+  |> Enum.sum()
+```
