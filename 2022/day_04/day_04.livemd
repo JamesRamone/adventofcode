@@ -1,0 +1,61 @@
+# Day 4: Camp Cleanup
+
+## Setup
+
+https://adventofcode.com/2022/day/4
+
+```elixir
+input = """
+2-4,6-8
+2-3,4-5
+5-7,7-9
+2-8,3-7
+6-6,4-6
+2-6,4-8
+"""
+
+input = File.read!("/data/2022/day_04/input")
+```
+
+```elixir
+data =
+  input
+  |> String.split([",", "-", "\n"], trim: true)
+  |> Enum.map(&String.to_integer/1)
+  |> Enum.chunk_every(4)
+```
+
+## Part 1
+
+```elixir
+data
+|> Enum.reduce(0, fn [a, b, x, y], acc ->
+  if (a <= x and b >= y) or (a >= x and b <= y) do
+    acc + 1
+  else
+    acc
+  end
+end)
+```
+
+## Part 2
+
+```elixir
+data
+|> Enum.reduce(0, fn [a, b, x, y], acc ->
+  if (a <= x and b >= y) or
+       (a >= x and b <= y) or
+       (a >= x and a <= y) or
+       (b >= x and b <= y) do
+    acc + 1
+  else
+    acc
+  end
+end)
+```
+
+```elixir
+data
+|> Enum.map(fn [a, b, x, y] -> Range.disjoint?(a..b, x..y) end)
+|> Enum.count(fn x -> x == false end)
+```
