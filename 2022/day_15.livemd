@@ -1,0 +1,158 @@
+# Day 15
+
+```elixir
+Mix.install([
+  {:kino_aoc, git: "https://github.com/ljgago/kino_aoc"}
+])
+```
+
+## Section
+
+```elixir
+{:ok, input} = KinoAOC.download_puzzle("2022", "15", System.fetch_env!("LB_AOC_SECRET"))
+```
+
+```elixir
+sample_input = """
+Sensor at x=2, y=18: closest beacon is at x=-2, y=15
+Sensor at x=9, y=16: closest beacon is at x=10, y=16
+Sensor at x=13, y=2: closest beacon is at x=15, y=3
+Sensor at x=12, y=14: closest beacon is at x=10, y=16
+Sensor at x=10, y=20: closest beacon is at x=10, y=16
+Sensor at x=14, y=17: closest beacon is at x=10, y=16
+Sensor at x=8, y=7: closest beacon is at x=2, y=10
+Sensor at x=2, y=0: closest beacon is at x=2, y=10
+Sensor at x=0, y=11: closest beacon is at x=2, y=10
+Sensor at x=20, y=14: closest beacon is at x=25, y=17
+Sensor at x=17, y=20: closest beacon is at x=21, y=22
+Sensor at x=16, y=7: closest beacon is at x=15, y=3
+Sensor at x=14, y=3: closest beacon is at x=15, y=3
+Sensor at x=20, y=1: closest beacon is at x=15, y=3
+"""
+```
+
+```elixir
+all =
+  input
+  |> String.split(["\n", ":"], trim: true)
+  |> Enum.map(fn line ->
+    Regex.run(~r/.*x=(?<x>-?[0-9]+),\sy=(?<y>-?[0-9]+)/, line)
+    |> List.delete_at(0)
+    |> Enum.map(&String.to_integer/1)
+    |> List.to_tuple()
+  end)
+```
+
+```elixir
+[sensors, beacons] = Enum.chunk_every(all, 2) |> Enum.zip() |> Enum.map(&Tuple.to_list(&1))
+
+beacons
+```
+
+```elixir
+{{minx, _}, {maxx, _}} = Enum.min_max_by(all, &elem(&1, 0))
+{{_, miny}, {_, maxy}} = Enum.min_max_by(all, &elem(&1, 1))
+
+{minx, maxx, miny, maxy}
+```
+
+```elixir
+defmodule Day15 do
+  def manhattan({x1, y1}, {x2, y2}) do
+    abs(x1 - x2) + abs(y1 - y2)
+  end
+
+  def map([{x1, y1} = s, b], maxsize) do
+    dist = Day15.manhattan(s, b)
+
+    for x <- max(0, x1 - dist)..min(x1 + dist, maxsize),
+        y <- max(0, y1 - dist)..min(y1 + dist, maxsize),
+        dist >= Day15.manhattan(s, {x, y}),
+        into: [] do
+      {x, y}
+    end
+  end
+end
+```
+
+```elixir
+# set = MapSet.new()
+# # target = 10
+# target = 2000000
+# seen =
+#   all
+#   |> Stream.chunk_every(2)
+#   |> Stream.map(fn [s, b] -> {s, Day15.manhattan(s, b)} end)
+#   |> Stream.filter(fn {{_x, y}, d} -> 
+#     cond do
+#       y > target -> y - d <= target
+#       y < target -> y + d >= target
+#       y == target -> true
+#     end
+#   end)
+#   |> Stream.flat_map(fn {{x1, _y1} = s, dist} ->
+#     for x <- x1-dist..x1+dist,
+#         y <- [target],
+#         dist >= Day15.manhattan(s, {x, y}),
+#         !Enum.member?(beacons, {x, y}),
+#         into: [] do
+#       {x, y}
+#     end
+#   end)
+#   |> MapSet.new
+#   |> Enum.count()
+```
+
+```elixir
+# for y <- miny..maxy do
+#   for x <- minx..maxx do
+#     cond do 
+#       Enum.member?(beacons, {x, y}) ->
+#         "B"
+#       Enum.member?(sensors, {x, y}) ->
+#         "S"
+#       MapSet.member?(seen, {x, y}) ->
+#         "#"
+#       true ->
+#         "."
+#     end
+#   end
+#   |> IO.puts
+# end
+```
+
+## Part 2
+
+```elixir
+maxsize = 4_000_000
+# maxsize = 20
+
+seen =
+  all
+  |> Stream.chunk_every(2)
+  # |> Stream.map(fn [s, b] -> {s, Day15.manhattan(s, b)} end)
+  |> Task.async_stream(&Day15.map(&1, maxsize), timeout: :infinity)
+  # |> Stream.flat_map(fn {{x1, y1} = s, dist} ->
+  #   for x <- max(0, x1-dist)..min(x1+dist, maxsize),
+  #       y <- max(0, y1-dist)..min(y1+dist, maxsize),
+  #       dist >= Day15.manhattan(s, {x, y}),
+  #       !Enum.member?(beacons, {x, y}),
+  #       into: [] do
+  #     {x, y}
+  #   end
+  # end)
+  |> Stream.flat_map(fn {:ok, val} -> val end)
+  |> MapSet.new()
+```
+
+```elixir
+everything = for x <- 0..maxsize, y <- 0..maxsize, into: MapSet.new(), do: {x, y}
+```
+
+```elixir
+everything
+|> MapSet.difference(seen)
+|> MapSet.difference(MapSet.new(beacons))
+|> MapSet.to_list()
+|> then(fn [{x, y}] -> x * 4_000_000 + y end)
+```
